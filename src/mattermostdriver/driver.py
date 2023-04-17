@@ -333,7 +333,7 @@ class Driver(BaseDriver):
     def __exit__(self, *exc_info):
         return self.client.__exit__(*exc_info)
 
-    def init_websocket(self, event_handler, websocket_cls=Websocket):
+    async def init_websocket(self, event_handler, websocket_cls=Websocket):
         """
         Will initialize the websocket connection to the mattermost server.
 
@@ -356,8 +356,12 @@ class Driver(BaseDriver):
         :return: The event loop
         """
         self.websocket = websocket_cls(self.options, self.client.token)
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.websocket.connect(event_handler))
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop - asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.run_until_complete(await self.websocket.connect(event_handler))
         return loop
 
     def login(self):
